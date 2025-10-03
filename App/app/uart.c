@@ -27,7 +27,7 @@
 #include "app/uart.h"
 #include "board.h"
 #include "py32f0xx_ll_dma.h"
-// #include "driver/aes.h"
+#include "driver/aes.h"
 #include "driver/bk4819.h"
 #include "driver/crc.h"
 #include "driver/eeprom.h"
@@ -239,10 +239,7 @@ static bool IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint
     IV[1] = 0;
     IV[2] = 0;
     IV[3] = 0;
-
-    // AES_Encrypt(pKey, IV, pIn, IV, true);
-    // TODO: To be implemented
-
+    AES_Encrypt(pKey, IV, pIn, IV, true);
     for (i = 0; i < 4; i++)
     {
         if (IV[i] != pResponse[i])

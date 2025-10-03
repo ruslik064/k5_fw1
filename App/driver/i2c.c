@@ -23,27 +23,33 @@
 #define _PIN_SCL GPIO_PIN_I2C_SCL
 #define _PIN_SDA GPIO_PIN_I2C_SDA
 
+#define _SET_SCL() LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SCL)
+#define _RESET_SCL() LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL)
+
+#define _SET_SDA() LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA)
+#define _RESET_SDA() LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SDA)
+
 void I2C_Start(void)
 {
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA);
+    _SET_SDA();
     SYSTICK_DelayUs(1);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SCL);
+    _SET_SCL();
     SYSTICK_DelayUs(1);
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SDA);
+    _RESET_SDA();
     SYSTICK_DelayUs(1);
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL);
+    _RESET_SCL();
     SYSTICK_DelayUs(1);
 }
 
 void I2C_Stop(void)
 {
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SDA);
+    _RESET_SDA();
     SYSTICK_DelayUs(1);
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL);
+    _RESET_SCL();
     SYSTICK_DelayUs(1);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SCL);
+    _SET_SCL();
     SYSTICK_DelayUs(1);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA);
+    _SET_SDA();
     SYSTICK_DelayUs(1);
 }
 
@@ -96,46 +102,46 @@ int I2C_Write(uint8_t Data)
     uint8_t i;
     int ret = -1;
 
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL);
+    _RESET_SCL();
     SYSTICK_DelayUs(1);
 
     for (i = 0; i < 8; i++)
     {
         if ((Data & 0x80) == 0)
         {
-            LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SDA);
+            _RESET_SDA();
         }
         else
         {
-            LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA);
+            _SET_SDA();
         }
         Data <<= 1;
         SYSTICK_DelayUs(1);
-        LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SCL);
+        _SET_SCL();
         SYSTICK_DelayUs(1);
-        LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL);
+        _RESET_SCL();
         SYSTICK_DelayUs(1);
     }
 
     LL_GPIO_SetPinMode(_PORT_I2C, _PIN_SDA, LL_GPIO_MODE_INPUT);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA);
+    _SET_SDA();
     SYSTICK_DelayUs(1);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SCL);
+    _SET_SCL();
     SYSTICK_DelayUs(1);
 
     for (i = 0; i < 255; i++)
     {
-        if (LL_GPIO_IsInputPinSet(_PORT_I2C, _PIN_SDA))
+        if (!LL_GPIO_IsInputPinSet(_PORT_I2C, _PIN_SDA))
         {
             ret = 0;
             break;
         }
     }
 
-    LL_GPIO_ResetOutputPin(_PORT_I2C, _PIN_SCL);
+    _RESET_SCL();
     SYSTICK_DelayUs(1);
     LL_GPIO_SetPinMode(_PORT_I2C, _PIN_SDA, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetOutputPin(_PORT_I2C, _PIN_SDA);
+    _RESET_SDA();
 
     return ret;
 }

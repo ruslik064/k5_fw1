@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     driver/backlight.c
     driver/crc.c
     driver/keyboard.c
+    driver/aes.c
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE

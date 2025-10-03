@@ -25,6 +25,7 @@
 #include "driver/gpio.h"
 #include "driver/system.h"
 #include "driver/systick.h"
+#include "driver/eeprom.h"
 
 #if defined(ENABLE_UART)
 #include "driver/uart.h"
@@ -68,7 +69,11 @@ void Main(void)
     gDTMF_String[14] = 0;
 
     BK4819_Init();
+
+    EEPROM_Check();
+
     BOARD_ADC_GetBatteryInfo(&gBatteryCurrentVoltage, &gBatteryCurrent);
+
     BOARD_EEPROM_Init();
     BOARD_EEPROM_LoadCalibration();
 

@@ -14,16 +14,11 @@
  *     limitations under the License.
  */
 
-#ifndef DRIVER_EEPROM_H
-#define DRIVER_EEPROM_H
+#ifndef DRIVER_AES_H
+#define DRIVER_AES_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
-extern bool v_cc;
-
-void EEPROM_Check();
-void EEPROM_ReadBuffer(uint16_t Address, void *pBuffer, uint8_t Size);
-void EEPROM_WriteBuffer(uint16_t Address, const void *pBuffer);
+void AES_Encrypt(const void *pKey, const void *pIv, const void *pIn, void *pOut, uint8_t NumBlocks);
 
 #endif
