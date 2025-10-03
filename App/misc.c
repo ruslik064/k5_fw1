@@ -71,7 +71,7 @@ bool gUpdateRSSI;
 #if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
 AlarmState_t gAlarmState;
 #endif
-uint8_t gVoltageMenuCountdown;
+uint8_t gMenuCountdown;
 bool gPttWasReleased;
 bool gPttWasPressed;
 uint8_t gKeypadLocked;

@@ -40,6 +40,8 @@
 #include "ui/menu.h"
 #include "ui/ui.h"
 
+#define _ABR_MAX 15
+
 static const VOICE_ID_t MenuVoices[] = {
     VOICE_ID_SQUELCH,
     VOICE_ID_FREQUENCY_STEP,
@@ -62,42 +64,47 @@ static const VOICE_ID_t MenuVoices[] = {
     VOICE_ID_BEEP_PROMPT,
     VOICE_ID_TRANSMIT_OVER_TIME,
     VOICE_ID_VOICE_PROMPT,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
+    VOICE_ID_INVALID, // MENU_SC_REV
+    VOICE_ID_INVALID, // MENU_MDF
+    VOICE_ID_INVALID, // MENU_AUTOLK
+    VOICE_ID_INVALID, // MENU_S_ADD1
+    VOICE_ID_INVALID, // MENU_S_ADD2
+    VOICE_ID_INVALID, // MENU_STE
+    VOICE_ID_INVALID, // MENU_RP_STE
+    VOICE_ID_INVALID, // MENU_MIC
+    VOICE_ID_INVALID, // MENU_1_CALL
+    VOICE_ID_INVALID, // MENU_S_LIST
+    VOICE_ID_INVALID, // MENU_SLIST1
+    VOICE_ID_INVALID, // MENU_SLIST2
+#if defined(ENABLE_ALARM)
+    VOICE_ID_INVALID, // MENU_AL_MOD
+#endif
     VOICE_ID_ANI_CODE,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
+    VOICE_ID_INVALID, // MENU_UPCODE
+    VOICE_ID_INVALID, // MENU_DWCODE
+    VOICE_ID_INVALID, // MENU_D_ST
+    VOICE_ID_INVALID, // MENU_D_RSP
+    VOICE_ID_INVALID, // MENU_D_HOLD
+    VOICE_ID_INVALID, // MENU_D_PRE
+    VOICE_ID_INVALID, // MENU_PTT_ID
+    VOICE_ID_INVALID, // MENU_D_DCD
+    VOICE_ID_INVALID, // MENU_D_LIST
+    VOICE_ID_INVALID, // MENU_PONMSG
+    VOICE_ID_INVALID, // MENU_ROGER
+    VOICE_ID_INVALID, // MENU_VOL
+    VOICE_ID_INVALID, // MENU_AM
+#if defined(ENABLE_NOAA)
+    VOICE_ID_INVALID, // MENU_NOAA_S
+#endif
     VOICE_ID_DELETE_CHANNEL,
     VOICE_ID_INITIALISATION,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
-    VOICE_ID_INVALID,
+    VOICE_ID_INVALID, // MENU_ABOUT
+    VOICE_ID_INVALID, // MENU_350EN
+    VOICE_ID_INVALID, // MENU_F_LOCK
+    VOICE_ID_INVALID, // MENU_200TX
+    VOICE_ID_INVALID, // MENU_350TX
+    VOICE_ID_INVALID, // MENU_500TX
+    VOICE_ID_INVALID, // MENU_SCREN
 };
 
 void MENU_StartCssScan(int8_t Direction)
@@ -124,15 +131,23 @@ int MENU_GetLimits(uint8_t Cursor, uint8_t *pMin, uint8_t *pMax)
         *pMin = 0;
         *pMax = 9;
         break;
+    case MENU_ABR:
+        *pMin = 0;
+        *pMax = _ABR_MAX;
+        break;
     case MENU_STEP:
         if (gTxVfo->Band == BAND2_108MHz)
         {
             *pMin = 0;
             *pMax = 6;
-            break;
         }
-        // Fallthrough
-    case MENU_ABR:
+        else
+        {
+            *pMin = 0;
+            *pMax = 5;
+        }
+        break;
+
     case MENU_F_LOCK:
         *pMin = 0;
         *pMax = 5;
@@ -375,7 +390,6 @@ void MENU_AcceptSetting(void)
         gEeprom.BACKLIGHT = gSubMenuSelection;
         if (gSubMenuSelection == 0)
         {
-            // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
             LL_GPIO_ResetOutputPin(GPIO_PORT_BACKLIGHT, GPIO_PIN_BACKLIGHT);
         }
         else
@@ -1092,71 +1106,75 @@ static void MENU_Key_EXIT(bool bKeyPressed, bool bKeyHeld)
 
 static void MENU_Key_MENU(bool bKeyPressed, bool bKeyHeld)
 {
-    if (!bKeyHeld && bKeyPressed)
+    if (bKeyHeld || !bKeyPressed)
     {
-        gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
-        gRequestDisplayScreen = DISPLAY_MENU;
-        if (!gIsInSubMenu)
+        return;
+    }
+
+    gBeepToPlay = BEEP_1KHZ_60MS_OPTIONAL;
+    gRequestDisplayScreen = DISPLAY_MENU;
+
+    if (!gIsInSubMenu)
+    {
+        if (gMenuCursor != MENU_SCR)
         {
-            if (gMenuCursor != MENU_SCR)
+            gAnotherVoiceID = MenuVoices[gMenuCursor];
+        }
+        gAskForConfirmation = 0;
+        gIsInSubMenu = true;
+    }
+    else
+    {
+        if (gMenuCursor == MENU_RESET || gMenuCursor == MENU_MEM_CH || gMenuCursor == MENU_DEL_CH)
+        {
+            switch (gAskForConfirmation)
             {
-                gAnotherVoiceID = MenuVoices[gMenuCursor];
+            case 0:
+                gAskForConfirmation = 1;
+                break;
+            case 1:
+                gAskForConfirmation = 2;
+                UI_DisplayMenu();
+                if (gMenuCursor == MENU_RESET)
+                {
+                    AUDIO_SetVoiceID(0, VOICE_ID_CONFIRM);
+                    AUDIO_PlaySingleVoice(true);
+                    MENU_AcceptSetting();
+#if defined(ENABLE_OVERLAY)
+                    overlay_FLASH_RebootToBootloader();
+#else
+                    NVIC_SystemReset();
+#endif
+                }
+                gFlagAcceptSetting = true;
+                gIsInSubMenu = false;
+                gAskForConfirmation = 0;
             }
-            gAskForConfirmation = 0;
-            gIsInSubMenu = true;
         }
         else
         {
-            if (gMenuCursor == MENU_RESET || gMenuCursor == MENU_MEM_CH || gMenuCursor == MENU_DEL_CH)
+            gFlagAcceptSetting = true;
+            gIsInSubMenu = false;
+        }
+        gCssScanMode = CSS_SCAN_MODE_OFF;
+        if (gMenuCursor == MENU_SCR)
+        {
+            if (gSubMenuSelection == 0)
             {
-                switch (gAskForConfirmation)
-                {
-                case 0:
-                    gAskForConfirmation = 1;
-                    break;
-                case 1:
-                    gAskForConfirmation = 2;
-                    UI_DisplayMenu();
-                    if (gMenuCursor == MENU_RESET)
-                    {
-                        AUDIO_SetVoiceID(0, VOICE_ID_CONFIRM);
-                        AUDIO_PlaySingleVoice(true);
-                        MENU_AcceptSetting();
-#if defined(ENABLE_OVERLAY)
-                        overlay_FLASH_RebootToBootloader();
-#else
-                        NVIC_SystemReset();
-#endif
-                    }
-                    gFlagAcceptSetting = true;
-                    gIsInSubMenu = false;
-                    gAskForConfirmation = 0;
-                }
+                gAnotherVoiceID = VOICE_ID_SCRAMBLER_OFF;
             }
             else
             {
-                gFlagAcceptSetting = true;
-                gIsInSubMenu = false;
-            }
-            gCssScanMode = CSS_SCAN_MODE_OFF;
-            if (gMenuCursor == MENU_SCR)
-            {
-                if (gSubMenuSelection == 0)
-                {
-                    gAnotherVoiceID = VOICE_ID_SCRAMBLER_OFF;
-                }
-                else
-                {
-                    gAnotherVoiceID = VOICE_ID_SCRAMBLER_ON;
-                }
-            }
-            else
-            {
-                gAnotherVoiceID = VOICE_ID_CONFIRM;
+                gAnotherVoiceID = VOICE_ID_SCRAMBLER_ON;
             }
         }
-        gInputBoxIndex = 0;
+        else
+        {
+            gAnotherVoiceID = VOICE_ID_CONFIRM;
+        }
     }
+
+    gInputBoxIndex = 0;
 }
 
 static void MENU_Key_STAR(bool bKeyPressed, bool bKeyHeld)
@@ -1321,6 +1339,6 @@ void MENU_ProcessKeys(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     }
     if (gScreenToDisplay == DISPLAY_MENU && gMenuCursor == MENU_VOL)
     {
-        gVoltageMenuCountdown = 0x20;
+        gMenuCountdown = 0x20;
     }
 }

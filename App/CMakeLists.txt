@@ -1,19 +1,3 @@
-# /* Copyright (c) 2025 muzkr
-#  * https://github.com/muzkr
-#  *
-#  * Licensed under the MIT License (the "License");
-#  * you may not use this file except in compliance with the License.
-#  * You may obtain a copy of the License at
-#  *
-#  *     https://mit-license.org/
-#  *
-#  *     Unless required by applicable law or agreed to in writing, software
-#  *     distributed under the License is distributed on an "AS IS" BASIS,
-#  *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  *     See the License for the specific language governing permissions and
-#  *     limitations under the License.
-#  *
-#  */
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     main.c
@@ -31,6 +15,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     "version.c"
     bitmaps.c
     app/app.c
+    app/fm.c
     app/dtmf.c
     app/uart.c
     app/generic.c
@@ -38,6 +23,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     app/menu.c
     app/action.c
     app/main.c
+    app/aircopy.c
     ui/ui.c
     ui/rssi.c
     ui/welcome.c
@@ -49,12 +35,15 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ui/status.c
     ui/battery.c
     ui/inputbox.c
+    ui/fmradio.c
+    ui/aircopy.c
     helper/battery.c
     helper/boot.c
     driver/systick.c
     driver/system.c
     driver/uart.c
     driver/bk4819.c
+    driver/bk1080.c
     driver/st7565.c
     driver/eeprom.c
     driver/i2c.c
@@ -70,10 +59,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     "ENABLE_UART"
-    # "ENABLE_FMRADIO"
-    # "ENABLE_ALARM"
-    # "ENABLE_NOAA"
-    # "ENABLE_AIRCOPY"
+    "ENABLE_FMRADIO"
+    "ENABLE_ALARM"
+    "ENABLE_NOAA"
+    "ENABLE_AIRCOPY"
+    "ENABLE_TX1750"
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

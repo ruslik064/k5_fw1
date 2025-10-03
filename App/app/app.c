@@ -73,6 +73,9 @@
 
 #include <stdio.h>
 
+#define _MENU_COUNTDOWN 12     // in sec
+#define _KEY_LOCK_COUNTDOWN 15 // in sec
+
 static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 
 static void APP_CheckForIncoming(void)
@@ -1035,6 +1038,7 @@ void APP_CheckKeys(void)
             gPttDebounceCounter = 0;
         }
     }
+
     Key = KEYBOARD_Poll();
     if (gKeyReading0 != Key)
     {
@@ -1046,6 +1050,7 @@ void APP_CheckKeys(void)
         gDebounceCounter = 0;
         return;
     }
+
     gDebounceCounter++;
     if (gDebounceCounter == 2)
     {
@@ -1138,7 +1143,6 @@ void APP_TimeSlice10ms(void)
 
     if (gFlashLightState == FLASHLIGHT_BLINK && (gFlashLightBlinkCounter & 15U) == 0)
     {
-        // GPIO_FlipBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
         LL_GPIO_TogglePin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
     }
     if (gVoxResumeCountdown)
@@ -1187,7 +1191,7 @@ void APP_TimeSlice10ms(void)
                     RADIO_SetTxParameters();
                     BK4819_TransmitTone(true, 500);
                     SYSTEM_DelayMs(2);
-                    GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+                    GPIO_SET_AUDIO_PATH();
                     gEnableSpeaker = true;
                     gAlarmToneCounter = 0;
                 }
@@ -1437,10 +1441,10 @@ void APP_TimeSlice500ms(void)
                     }
                     gUpdateStatus = true;
                 }
-                if (gVoltageMenuCountdown)
+                if (gMenuCountdown)
                 {
-                    gVoltageMenuCountdown--;
-                    if (gVoltageMenuCountdown == 0)
+                    gMenuCountdown--;
+                    if (gMenuCountdown == 0)
                     {
                         if (gInputBoxIndex || gDTMF_InputMode || gScreenToDisplay == DISPLAY_MENU)
                         {
@@ -1599,7 +1603,7 @@ void APP_TimeSlice500ms(void)
 static void ALARM_Off(void)
 {
     gAlarmState = ALARM_STATE_OFF;
-    GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_RESET_AUDIO_PATH();
     gEnableSpeaker = false;
     if (gEeprom.ALARM_MODE == ALARM_MODE_TONE)
     {
@@ -1653,8 +1657,9 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     gBatterySaveCountdown = 1000;
     if (gEeprom.AUTO_KEYPAD_LOCK)
     {
-        gKeyLockCountdown = 30;
+        gKeyLockCountdown = _KEY_LOCK_COUNTDOWN * 2;
     }
+
     if (!bKeyPressed)
     {
         if (gFlagSaveVfo)
@@ -1691,7 +1696,7 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     {
         if (Key != KEY_PTT)
         {
-            gVoltageMenuCountdown = 0x10;
+            gMenuCountdown = _MENU_COUNTDOWN * 2;
         }
         BACKLIGHT_TurnOn();
         if (gDTMF_DecodeRing)
@@ -1809,13 +1814,14 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     {
         if (gCurrentFunction == FUNCTION_TRANSMIT)
         {
+            if (
 #if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-            if (gAlarmState == ALARM_STATE_OFF)
-            {
+                gAlarmState == ALARM_STATE_OFF
 #else
-            if (1)
-            {
+                1
 #endif
+            )
+            {
                 if (Key == KEY_PTT)
                 {
                     GENERIC_Key_PTT(bKeyPressed);

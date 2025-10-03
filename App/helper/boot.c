@@ -68,14 +68,18 @@ void BOOT_ProcessMode(BOOT_Mode_t Mode)
     {
         gMenuCursor = MENU_350TX;
         gSubMenuSelection = gSetting_350TX;
+        // gMenuCursor = MENU_F_LOCK;
+        // gSubMenuSelection = gSetting_F_LOCK;
         GUI_SelectNextDisplay(DISPLAY_MENU);
-        gMenuListCount = 55;
-#if defined(ENABLE_ALARM)
-        gMenuListCount++;
-#endif
-#if defined(ENABLE_NOAA)
-        gMenuListCount++;
-#endif
+        //         gMenuListCount = 55;
+        // #if defined(ENABLE_ALARM)
+        //         gMenuListCount++;
+        // #endif
+        // #if defined(ENABLE_NOAA)
+        //         gMenuListCount++;
+        // #endif
+        gMenuListCount = _MENU_END;
+
         gF_LOCK = true;
 #if defined(ENABLE_AIRCOPY)
     }

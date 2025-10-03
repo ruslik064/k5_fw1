@@ -40,7 +40,6 @@ static void ACTION_FlashLight(void)
     {
     case 0:
         gFlashLightState++;
-        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
         LL_GPIO_SetOutputPin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
         break;
     case 1:
@@ -48,7 +47,6 @@ static void ACTION_FlashLight(void)
         break;
     default:
         gFlashLightState = 0;
-        // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
         LL_GPIO_ResetOutputPin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
     }
 }

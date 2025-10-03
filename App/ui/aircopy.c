@@ -17,7 +17,7 @@
 #include <string.h>
 #include "app/aircopy.h"
 #include "driver/st7565.h"
-#include "external/printf/printf.h"
+#include <stdio.h>
 #include "misc.h"
 #include "radio.h"
 #include "ui/aircopy.h"

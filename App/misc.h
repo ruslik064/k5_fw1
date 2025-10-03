@@ -124,7 +124,7 @@ extern uint8_t gBatteryVoltageIndex;
 extern CssScanMode_t gCssScanMode;
 extern bool gUpdateRSSI;
 extern AlarmState_t gAlarmState;
-extern uint8_t gVoltageMenuCountdown;
+extern uint8_t gMenuCountdown;
 extern bool gPttWasReleased;
 extern bool gPttWasPressed;
 extern bool gFlagReconfigureVfos;
