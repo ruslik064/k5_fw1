@@ -26,8 +26,8 @@ MSG_PROG_FW_RESP = 0x051A
 MSG_PROG_f80 = 0x0516
 MSG_PROG_f80_RESP = 0x0517
 
-_MSG_LOG = 0x4C4C  # 'L' 'L'
-_MSG_LOG_OBFUSCATED = 0x205A
+# _MSG_LOG = 0x4C4C  # 'L' 'L'
+# _MSG_LOG_OBFUSCATED = 0x205A
 
 
 class Msg:
@@ -97,12 +97,14 @@ def fetch(buf: bytearray) -> Msg | None:
     #  Packet complete
 
     # Message type 0x4c4c (obfuscated to 0x205a) is for logging
-    msg_type = _get_hw_LE(buf, pack_begin + 4)
-    if _MSG_LOG == msg_type or _MSG_LOG_OBFUSCATED == msg_type:
-        # Log messages are not obfuscated
-        pass
-    else:
-        _obfus(buf, pack_begin + 4, msg_len + 2)
+    # msg_type = _get_hw_LE(buf, pack_begin + 4)
+    # if _MSG_LOG == msg_type or _MSG_LOG_OBFUSCATED == msg_type:
+    #     # Log messages are not obfuscated
+    #     pass
+    # else:
+    #     _obfus(buf, pack_begin + 4, msg_len + 2)
+
+    _obfus(buf, pack_begin + 4, msg_len + 2)
 
     crc = _get_hw_LE(buf, pack_end - 2)
     msg = Msg(buf[pack_begin + 4 : pack_end - 2])

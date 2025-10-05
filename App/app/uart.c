@@ -48,6 +48,8 @@
 
 #define DMA_INDEX(x, y) (((x) + (y)) % sizeof(UART_DMA_Buffer))
 
+#define _OPEN_ACCESS 1
+
 typedef struct
 {
     uint16_t ID;
@@ -220,17 +222,28 @@ static void SendVersion(void)
     Reply.Header.ID = 0x0515;
     Reply.Header.Size = sizeof(Reply.Data);
     strcpy(Reply.Data.Version, Version);
+
+#if _OPEN_ACCESS
+    Reply.Data.bHasCustomAesKey = false;
+    Reply.Data.bIsInLockScreen = bIsInLockScreen;
+    memset(Reply.Data.Challenge, 0, 16);
+#else
     Reply.Data.bHasCustomAesKey = bHasCustomAesKey;
     Reply.Data.bIsInLockScreen = bIsInLockScreen;
     Reply.Data.Challenge[0] = gChallenge[0];
     Reply.Data.Challenge[1] = gChallenge[1];
     Reply.Data.Challenge[2] = gChallenge[2];
     Reply.Data.Challenge[3] = gChallenge[3];
+#endif
 
     SendReply(&Reply, sizeof(Reply));
 }
 
-static bool IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint32_t *pResponse)
+static bool
+#if _OPEN_ACCESS
+    __attribute__((unused))
+#endif
+    IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint32_t *pResponse)
 {
     uint8_t i;
     uint32_t IV[4];
@@ -283,10 +296,12 @@ static void CMD_051B(const uint8_t *pBuffer)
     Reply.Data.Offset = pCmd->Offset;
     Reply.Data.Size = pCmd->Size;
 
+#if !_OPEN_ACCESS
     if (bHasCustomAesKey)
     {
         bLocked = gIsLocked;
     }
+#endif
 
     if (!bLocked)
     {
@@ -301,7 +316,7 @@ static void CMD_051D(const uint8_t *pBuffer)
     const CMD_051D_t *pCmd = (const CMD_051D_t *)pBuffer;
     REPLY_051D_t Reply;
     bool bReloadEeprom;
-    bool bIsLocked;
+    bool bIsLocked = false;
 
     if (pCmd->Timestamp != Timestamp)
     {
@@ -317,11 +332,13 @@ static void CMD_051D(const uint8_t *pBuffer)
     Reply.Header.Size = sizeof(Reply.Data);
     Reply.Data.Offset = pCmd->Offset;
 
+#if !_OPEN_ACCESS
     bIsLocked = bHasCustomAesKey;
     if (bHasCustomAesKey)
     {
         bIsLocked = gIsLocked;
     }
+#endif
 
     if (!bIsLocked)
     {
@@ -331,6 +348,7 @@ static void CMD_051D(const uint8_t *pBuffer)
         {
             uint16_t Offset = pCmd->Offset + (i * 8U);
 
+            // Write AES key
             if (Offset >= 0x0F30 && Offset < 0x0F40)
             {
                 if (!gIsLocked)
@@ -380,15 +398,17 @@ static void CMD_0529(void)
 
 static void CMD_052D(const uint8_t *pBuffer)
 {
-    const CMD_052D_t *pCmd = (const CMD_052D_t *)pBuffer;
     REPLY_052D_t Reply;
-    bool bIsLocked;
+    bool bIsLocked = false;
 
 #if defined(ENABLE_FMRADIO)
     gFmRadioCountdown = 4;
 #endif
     Reply.Header.ID = 0x052E;
     Reply.Header.Size = sizeof(Reply.Data);
+
+#if !_OPEN_ACCESS
+    const CMD_052D_t *pCmd = (const CMD_052D_t *)pBuffer;
 
     bIsLocked = bHasCustomAesKey;
 
@@ -416,7 +436,10 @@ static void CMD_052D(const uint8_t *pBuffer)
         gTryCount = 3;
         bIsLocked = true;
     }
+#endif
+
     gIsLocked = bIsLocked;
+
     Reply.Data.bIsLocked = bIsLocked;
     SendReply(&Reply, sizeof(Reply));
 }

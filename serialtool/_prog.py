@@ -303,39 +303,6 @@ class _ProgFw(_State):
         return msg
 
 
-class _Logging(_State):
-    def __init__(self, prog):
-        super().__init__(prog)
-
-    def loop(self):
-        msg = self.recv_msg()
-        if not msg:
-            return None
-
-        msg_type = msg.get_msg_type()
-        if mm._MSG_LOG_OBFUSCATED != msg_type and mm._MSG_LOG != msg_type:
-            print("[{}] ".format(_timestamp_str()), end="")
-            _print_msg_raw(msg)
-            return None
-
-        # -----------------------
-        #  _MSG_LOG
-
-        len1 = msg.get_data_len()
-        end = msg.buf.find(b"\x00", 4, 4 + len1)
-        if -1 == end:
-            end = 4 + len1
-
-        s = (
-            bytes(memoryview(msg.buf)[4:end])
-            .decode(encoding="utf-8", errors="ignore")
-            .strip()
-        )
-        if len(s) > 0:
-            print("[{}] {}".format(_timestamp_str(), s))
-        return None
-
-
 def _timestamp() -> int:
     return int(datetime.now().timestamp() * 100)
 

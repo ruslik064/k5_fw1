@@ -40,8 +40,6 @@
 #include "ui/menu.h"
 #include "ui/ui.h"
 
-#define _ABR_MAX 15
-
 static const VOICE_ID_t MenuVoices[] = {
     VOICE_ID_SQUELCH,
     VOICE_ID_FREQUENCY_STEP,
@@ -133,7 +131,7 @@ int MENU_GetLimits(uint8_t Cursor, uint8_t *pMin, uint8_t *pMax)
         break;
     case MENU_ABR:
         *pMin = 0;
-        *pMax = _ABR_MAX;
+        *pMax = BACKLIGHT_TIMEOUT_MAX;
         break;
     case MENU_STEP:
         if (gTxVfo->Band == BAND2_108MHz)

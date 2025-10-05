@@ -63,8 +63,8 @@ static bool gIsInitBK1080;
 uint16_t BK1080_BaseFrequency;
 uint16_t BK1080_FrequencyDeviation;
 
-bool v_162;
-bool v_163;
+// bool v_162;
+// bool v_163;
 
 void BK1080_Init(uint16_t Frequency, bool bEnable)
 {
@@ -74,7 +74,7 @@ void BK1080_Init(uint16_t Frequency, bool bEnable)
     {
         // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BK1080);
         LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_13);
-        v_162 = true;
+        // v_162 = true;
         BK4819_ToggleGpioOut(BK4819_GPIO4_PIN32_VHF_LNA, 1);
 
         if (!gIsInitBK1080)
@@ -103,12 +103,11 @@ void BK1080_Init(uint16_t Frequency, bool bEnable)
     {
         BK1080_WriteRegister(BK1080_REG_02_POWER_CONFIGURATION, 0x0241);
 
-        v_162 = false;
-
-        if (!v_163)
-        {
-            BK4819_ToggleGpioOut(BK4819_GPIO4_PIN32_VHF_LNA, 0);
-        }
+        // v_162 = false;
+        // if (!v_163)
+        // {
+        //     BK4819_ToggleGpioOut(BK4819_GPIO4_PIN32_VHF_LNA, 0);
+        // }
 
         // GPIO_SetBit(&GPIOB->DATA, GPIOB_PIN_BK1080);
         LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_13);

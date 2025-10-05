@@ -1,3 +1,5 @@
 
 pyserial
-# pypubsub
+
+# for fw-pack.py
+# crcmod
