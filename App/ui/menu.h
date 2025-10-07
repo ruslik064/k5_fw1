@@ -78,11 +78,11 @@ enum
     MENU_DEL_CH,
     MENU_RESET,
     MENU_ABOUT,
-    MENU_350EN,
+    MENU_350TX,
     MENU_F_LOCK,
     MENU_200TX,
-    MENU_350TX,
     MENU_500TX,
+    MENU_350EN,
     MENU_SCREN,
     _MENU_END,
 };
