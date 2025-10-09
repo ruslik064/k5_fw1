@@ -16,17 +16,13 @@
 
 #include <string.h>
 #include "app/dtmf.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "dcs.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "driver/bk1080.h"
 #endif
-
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
 #include "driver/system.h"
@@ -155,11 +151,13 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
         {
             gAlarmState = ALARM_STATE_ALARM;
             GUI_DisplayScreen();
-            GPIO_RESET_AUDIO_PATH();
+            // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_ResetAudioPath();
             SYSTEM_DelayMs(20);
             BK4819_PlayTone(500, 0);
             SYSTEM_DelayMs(2);
-            GPIO_SET_AUDIO_PATH();
+            // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_SetAudioPath();
             gEnableSpeaker = true;
             SYSTEM_DelayMs(60);
             BK4819_ExitTxMute();
@@ -190,7 +188,8 @@ void FUNCTION_Select(FUNCTION_Type_t Function)
             }
 #endif
             SYSTEM_DelayMs(2);
-            GPIO_SET_AUDIO_PATH();
+            // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_SetAudioPath();
 #if defined(ENABLE_ALARM)
             gAlarmToneCounter = 0;
 #endif

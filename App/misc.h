@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ARRAY_SIZE(a)    (sizeof(a) / sizeof(a[0]))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 #define IS_MR_CHANNEL(x) ((x) >= MR_CHANNEL_FIRST && (x) <= MR_CHANNEL_LAST)
 #define IS_FREQ_CHANNEL(x) ((x) >= FREQ_CHANNEL_FIRST && (x) <= FREQ_CHANNEL_LAST)
@@ -30,54 +30,62 @@
 #define IS_NOT_NOAA_CHANNEL(x) ((x) >= MR_CHANNEL_FIRST && (x) <= FREQ_CHANNEL_LAST)
 #define IS_VALID_CHANNEL(x) ((x) < LAST_CHANNEL)
 
-enum {
-	MR_CHANNEL_FIRST = 0U,
-	MR_CHANNEL_LAST = 199U,
-	FREQ_CHANNEL_FIRST = 200U,
-	FREQ_CHANNEL_LAST = 206U,
+enum
+{
+    MR_CHANNEL_FIRST = 0U,
+    MR_CHANNEL_LAST = 199U,
+    FREQ_CHANNEL_FIRST = 200U,
+    FREQ_CHANNEL_LAST = 206U,
 #if defined(ENABLE_NOAA)
-	NOAA_CHANNEL_FIRST = 207U,
-	NOAA_CHANNEL_LAST = 216U,
+    NOAA_CHANNEL_FIRST = 207U,
+    NOAA_CHANNEL_LAST = 216U,
 #endif
-	LAST_CHANNEL,
+    LAST_CHANNEL,
 };
 
-enum {
-	FLASHLIGHT_OFF = 0U,
-	FLASHLIGHT_ON = 1U,
-	FLASHLIGHT_BLINK = 2U,
+enum
+{
+    FLASHLIGHT_OFF = 0U,
+    FLASHLIGHT_ON = 1U,
+    FLASHLIGHT_BLINK = 2U,
 };
 
-enum {
-	VFO_CONFIGURE_NONE = 0U,
-	VFO_CONFIGURE = 1U,
-	VFO_CONFIGURE_RELOAD = 2U,
+enum
+{
+    VFO_CONFIGURE_NONE = 0U,
+    VFO_CONFIGURE = 1U,
+    VFO_CONFIGURE_RELOAD = 2U,
 };
 
-enum AlarmState_t {
-	ALARM_STATE_OFF     = 0U,
-	ALARM_STATE_TXALARM = 1U,
-	ALARM_STATE_ALARM   = 2U,
-	ALARM_STATE_TX1750  = 3U,
+enum AlarmState_t
+{
+    ALARM_STATE_OFF = 0U,
+    ALARM_STATE_TXALARM = 1U,
+    ALARM_STATE_ALARM = 2U,
+    ALARM_STATE_TX1750 = 3U,
 };
 
 typedef enum AlarmState_t AlarmState_t;
 
-enum ReceptionMode_t {
-	RX_MODE_NONE      = 0U,
-	RX_MODE_DETECTED  = 1U,
-	RX_MODE_LISTENING = 2U,
+enum ReceptionMode_t
+{
+    RX_MODE_NONE = 0U,
+    RX_MODE_DETECTED = 1U,
+    RX_MODE_LISTENING = 2U,
 };
 
 typedef enum ReceptionMode_t ReceptionMode_t;
 
-enum CssScanMode_t {
-	CSS_SCAN_MODE_OFF      = 0U,
-	CSS_SCAN_MODE_SCANNING = 1U,
-	CSS_SCAN_MODE_FOUND    = 2U,
+enum CssScanMode_t
+{
+    CSS_SCAN_MODE_OFF = 0U,
+    CSS_SCAN_MODE_SCANNING = 1U,
+    CSS_SCAN_MODE_FOUND = 2U,
 };
 
 typedef enum CssScanMode_t CssScanMode_t;
+
+#define MAX_MENU_COUNTDOWN 24 // In 0.5 sec. Original 0x10
 
 extern bool gSetting_350TX;
 extern bool gSetting_KILLED;
@@ -221,4 +229,3 @@ void NUMBER_ToDigits(uint32_t Value, char *pDigits);
 uint8_t NUMBER_AddWithWraparound(uint8_t Base, int8_t Add, uint8_t LowerLimit, uint8_t UpperLimit);
 
 #endif
-

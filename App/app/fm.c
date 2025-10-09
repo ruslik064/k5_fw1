@@ -19,11 +19,9 @@
 #include "app/fm.h"
 #include "app/generic.h"
 #include "audio.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "driver/bk1080.h"
 #endif
-
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
 #include "functions.h"
@@ -31,9 +29,6 @@
 #include "settings.h"
 #include "ui/inputbox.h"
 #include "ui/ui.h"
-
-#define _SET_AUDIO_PATH() LL_GPIO_SetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH)
-#define _RESET_AUDIO_PATH() LL_GPIO_SetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH)
 
 uint16_t gFM_Channels[20];
 bool gFmRadioMode;
@@ -106,7 +101,8 @@ void FM_TurnOff(void)
     gFmRadioMode = false;
     gFM_ScanState = FM_SCAN_OFF;
     gFM_RestoreCountdown = 0;
-    _RESET_AUDIO_PATH();
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
     gEnableSpeaker = false;
     BK1080_Init(0, false);
     gUpdateStatus = true;
@@ -128,7 +124,8 @@ void FM_EraseChannels(void)
 
 void FM_Tune(uint16_t Frequency, int8_t Step, bool bFlag)
 {
-    _RESET_AUDIO_PATH();
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
     gEnableSpeaker = false;
     if (gFM_ScanState == FM_SCAN_OFF)
     {
@@ -175,7 +172,8 @@ void FM_PlayAndUpdate(void)
     gFmPlayCountdown = 0;
     gScheduleFM = false;
     gAskToSave = false;
-    _SET_AUDIO_PATH();
+    // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_SetAudioPath();
     gEnableSpeaker = true;
 }
 
@@ -625,7 +623,8 @@ void FM_Play(void)
             {
                 gEeprom.FM_SelectedFrequency = gEeprom.FM_FrequencyPlaying;
             }
-            _SET_AUDIO_PATH();
+            // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_SetAudioPath();
             gEnableSpeaker = true;
             GUI_SelectNextDisplay(DISPLAY_FM);
             return;
@@ -660,7 +659,8 @@ void FM_Start(void)
     gFM_ScanState = FM_SCAN_OFF;
     gFM_RestoreCountdown = 0;
     BK1080_Init(gEeprom.FM_FrequencyPlaying, true);
-    _SET_AUDIO_PATH();
+    // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_SetAudioPath();
     gEnableSpeaker = true;
     gUpdateStatus = true;
 }

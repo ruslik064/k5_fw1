@@ -17,14 +17,10 @@
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "audio.h"
-#include "py32f0xx_ll_gpio.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "driver/bk1080.h"
 #endif
-
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
 #include "driver/system.h"
@@ -33,17 +29,6 @@
 #include "misc.h"
 #include "settings.h"
 #include "ui/ui.h"
-
-#define _AMP_PORT GPIOB
-#define _AMP_PIN LL_GPIO_PIN_7
-
-// PA7
-#define _VOICE_PORT_0 GPIOA
-#define _VOICE_PIN_0 LL_GPIO_PIN_7
-
-// PB0
-#define _VOICE_PORT_1 GPIOB
-#define _VOICE_PIN_1 LL_GPIO_PIN_0
 
 static const uint8_t VoiceClipLengthChinese[58] = {
     0x32,
@@ -221,7 +206,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 
     ToneConfig = BK4819_ReadRegister(BK4819_REG_71);
 
-    LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
 
     if (gCurrentFunction == FUNCTION_POWER_SAVE && gRxIdleMode)
     {
@@ -250,7 +236,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
     }
     BK4819_PlayTone(ToneFrequency, true);
     SYSTEM_DelayMs(2);
-    LL_GPIO_SetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_SetAudioPath();
     SYSTEM_DelayMs(60);
 
     switch (Beep)
@@ -276,7 +263,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
     SYSTEM_DelayMs(Duration);
     BK4819_EnterTxMute();
     SYSTEM_DelayMs(20);
-    LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
 
     gVoxResumeCountdown = 80;
 
@@ -286,7 +274,8 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
     BK4819_WriteRegister(BK4819_REG_71, ToneConfig);
     if (gEnableSpeaker)
     {
-        LL_GPIO_SetOutputPin(_AMP_PORT, _AMP_PIN);
+        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_SetAudioPath();
     }
 #if defined(ENABLE_FMRADIO)
     if (gFmRadioMode)
@@ -304,23 +293,29 @@ void AUDIO_PlayVoice(uint8_t VoiceID)
 {
     uint8_t i;
 
-    LL_GPIO_SetOutputPin(_VOICE_PORT_0, _VOICE_PIN_0);
+    // GPIO_SetBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+    GPIO_SetOutputPin(GPIO_PIN_VOICE_0);
     SYSTEM_DelayMs(20);
-    LL_GPIO_ResetOutputPin(_VOICE_PORT_0, _VOICE_PIN_0);
+    // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+    GPIO_ResetOutputPin(GPIO_PIN_VOICE_0);
     for (i = 0; i < 8; i++)
     {
         if ((VoiceID & 0x80U) == 0)
         {
-            LL_GPIO_ResetOutputPin(_VOICE_PORT_1, _VOICE_PIN_1);
+            // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_1);
+            GPIO_ResetOutputPin(GPIO_PIN_VOICE_1);
         }
         else
         {
-            LL_GPIO_SetOutputPin(_VOICE_PORT_1, _VOICE_PIN_1);
+            // GPIO_SetBit(&GPIOA->DATA, GPIOA_PIN_VOICE_1);
+            GPIO_SetOutputPin(GPIO_PIN_VOICE_1);
         }
         SYSTICK_DelayUs(1000);
-        LL_GPIO_SetOutputPin(_VOICE_PORT_0, _VOICE_PIN_0);
+        // GPIO_SetBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+        GPIO_SetOutputPin(GPIO_PIN_VOICE_0);
         SYSTICK_DelayUs(1200);
-        LL_GPIO_ResetOutputPin(_VOICE_PORT_0, _VOICE_PIN_0);
+        // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+        GPIO_ResetOutputPin(GPIO_PIN_VOICE_0);
         VoiceID <<= 1;
         SYSTICK_DelayUs(200);
     }
@@ -365,7 +360,8 @@ void AUDIO_PlaySingleVoice(bool bFlag)
             BK1080_Mute(true);
         }
 #endif
-        LL_GPIO_SetOutputPin(_AMP_PORT, _AMP_PIN);
+        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_SetAudioPath();
         gVoxResumeCountdown = 2000;
         SYSTEM_DelayMs(5);
         AUDIO_PlayVoice(VoiceID);
@@ -395,7 +391,8 @@ void AUDIO_PlaySingleVoice(bool bFlag)
 #endif
             if (!gEnableSpeaker)
             {
-                LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+                // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+                GPIO_ResetAudioPath();
             }
             gVoiceWriteIndex = 0;
             gVoiceReadIndex = 0;
@@ -537,7 +534,8 @@ void AUDIO_PlayQueuedVoice(void)
 #endif
     if (!gEnableSpeaker)
     {
-        LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+        // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_ResetAudioPath();
     }
     gVoxResumeCountdown = 80;
     gVoiceWriteIndex = 0;

@@ -1,93 +1,76 @@
-# Copyright (c) 2025 muzkr
+#    Copyright 2025 muzkr
 #
-#   https://github.com/muzkr
+#         https://github.com/muzkr
 #
-# Licensed under the MIT License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at the root of this repository.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#     Unless required by applicable law or agreed to in writing, software
-#     distributed under the License is distributed on an "AS IS" BASIS,
-#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#     See the License for the specific language governing permissions and
-#     limitations under the License.
+#        http://www.apache.org/licenses/LICENSE-2.0
 #
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+add_library(App INTERFACE) 
+
+target_include_directories(App INTERFACE .)
+
+target_sources(App INTERFACE
     main.c
-    main1.c
-    scheduler.c
     board.c
+    scheduler.c
     settings.c
-    radio.c
-    dcs.c
+    "version.c"
     functions.c
     frequencies.c
+    dcs.c
     font.c
+    bitmaps.c
     audio.c
     misc.c
-    "version.c"
-    bitmaps.c
-    app/app.c
-    app/fm.c
-    app/dtmf.c
-    app/uart.c
-    app/generic.c
-    app/scanner.c
-    app/menu.c
-    app/action.c
-    app/main.c
-    app/aircopy.c
-    ui/ui.c
-    ui/rssi.c
-    ui/welcome.c
+    radio.c
+    ui/aircopy.c
+    ui/battery.c
+    ui/fmradio.c
+    ui/helper.c
+    ui/inputbox.c
+    ui/lock.c
     ui/main.c
     ui/menu.c
+    ui/rssi.c
     ui/scanner.c
-    ui/helper.c
-    ui/lock.c
     ui/status.c
-    ui/battery.c
-    ui/inputbox.c
-    ui/fmradio.c
-    ui/aircopy.c
+    ui/ui.c
+    ui/welcome.c
     helper/battery.c
     helper/boot.c
-    driver/systick.c
-    driver/system.c
-    driver/uart.c
-    driver/bk4819.c
-    driver/bk1080.c
-    driver/st7565.c
-    driver/eeprom.c
-    driver/i2c.c
-    driver/backlight.c
-    driver/crc.c
-    driver/keyboard.c
-    driver/aes.c
+    app/action.c
+    app/aircopy.c
+    app/app.c
+    app/dtmf.c
+    app/fm.c
+    app/generic.c
+    app/main.c
+    app/menu.c
+    app/scanner.c
+    app/uart.c
 )
 
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    .
-)
-
-# Symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    "ENABLE_UART"
-    "ENABLE_FMRADIO"
-    "ENABLE_ALARM"
-    "ENABLE_NOAA"
+target_compile_definitions(App INTERFACE
     "ENABLE_AIRCOPY"
+    "ENABLE_ALARM"
+    "ENABLE_FMRADIO"
+    "ENABLE_NOAA"
     "ENABLE_TX1750"
-    # "ENABLE_HORIZONTAL_MENU_UI"
+    "ENABLE_UART"
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    Core
-    printf
-)
+target_link_libraries(App INTERFACE K5_Driver printf)
 
-target_compile_definitions(printf INTERFACE 
+target_compile_definitions(App INTERFACE 
     "PRINTF_DISABLE_SUPPORT_FLOAT"
     "PRINTF_DISABLE_SUPPORT_LONG_LONG"
     "PRINTF_DISABLE_SUPPORT_PTRDIFF_T"

@@ -15,13 +15,9 @@
  */
 
 #include <string.h>
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
-#include "py32f0xx_ll_gpio.h"
-
 #include "app/scanner.h"
 #include "driver/bk4819.h"
 #include "driver/eeprom.h"
@@ -32,9 +28,6 @@
 #include "misc.h"
 #include "settings.h"
 #include "ui/ui.h"
-
-#define _AMP_PORT GPIOB
-#define _AMP_PIN LL_GPIO_PIN_7
 
 char gDTMF_String[15];
 char gDTMF_InputBox[15];
@@ -381,7 +374,8 @@ void DTMF_Reply(void)
     Delay = gEeprom.DTMF_PRELOAD_TIME;
     if (gEeprom.DTMF_SIDE_TONE)
     {
-        LL_GPIO_SetOutputPin(_AMP_PORT, _AMP_PIN);
+        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_SetAudioPath();
         gEnableSpeaker = true;
         Delay = gEeprom.DTMF_PRELOAD_TIME;
         if (gEeprom.DTMF_PRELOAD_TIME < 60)
@@ -401,7 +395,8 @@ void DTMF_Reply(void)
         gEeprom.DTMF_CODE_PERSIST_TIME,
         gEeprom.DTMF_CODE_INTERVAL_TIME);
 
-    LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
 
     gEnableSpeaker = false;
     BK4819_ExitDTMF_TX(false);

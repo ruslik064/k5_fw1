@@ -15,11 +15,10 @@
  */
 
 #include <string.h>
-
+#include "driver/device.h"
 #if defined(ENABLE_UART)
 #include "app/uart.h"
 #endif
-
 #include "audio.h"
 #include "driver/keyboard.h"
 #include "driver/st7565.h"
@@ -28,8 +27,6 @@
 #include "ui/helper.h"
 #include "ui/inputbox.h"
 #include "ui/lock.h"
-
-#include "py32f0xx.h"
 
 static void Render(void)
 {

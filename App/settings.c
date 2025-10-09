@@ -15,17 +15,13 @@
  */
 
 #include <string.h>
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "driver/eeprom.h"
-
 #if defined(ENABLE_UART)
 #include "driver/uart.h"
 #endif
-
 #include "misc.h"
 #include "settings.h"
 

@@ -1,77 +1,152 @@
-/**
-# Copyright (c) 2025 muzkr
-#
-#   https://github.com/muzkr
-#
-# Licensed under the MIT License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at the root of this repository.
-#
-#     Unless required by applicable law or agreed to in writing, software
-#     distributed under the License is distributed on an "AS IS" BASIS,
-#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#     See the License for the specific language governing permissions and
-#     limitations under the License.
-#
-*/
-
-#include "main.h"
-
-static void APP_SystemClockConfig(void);
-
-/**
- * @brief  Main program.
- * @param  None
- * @retval int
+/* Copyright 2025 muzkr https://github.com/muzkr
+ * Copyright 2023 Dual Tachyon
+ * https://github.com/DualTachyon
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
  */
-int main(void)
+
+#include <string.h>
+#include "app/app.h"
+#include "app/dtmf.h"
+#include "audio.h"
+#include "board.h"
+#include "driver/board.h"
+#include "driver/backlight.h"
+#include "driver/bk4819.h"
+#include "driver/gpio.h"
+#include "driver/system.h"
+#include "driver/systick.h"
+#if defined(ENABLE_UART)
+#include "driver/uart.h"
+#endif
+#include "helper/battery.h"
+#include "helper/boot.h"
+#include "misc.h"
+#include "radio.h"
+#include "settings.h"
+#include "ui/lock.h"
+#include "ui/welcome.h"
+#include "ui/menu.h"
+#include "version.h"
+
+#include <stdio.h>
+
+void _putchar(char c)
 {
-    /* Enable SYSCFG and PWR clocks */
-    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+#if defined(ENABLE_UART)
+    UART_Send((uint8_t *)&c, 1);
+#endif
+}
 
-    /* Configure system clock */
-    APP_SystemClockConfig();
+void Main(void)
+{
+    uint8_t i;
 
-    extern void Main();
-    Main();
- 
+    BOARD_Init();
+
+#if defined(ENABLE_UART)
+    UART_Init();
+    UART_Send(UART_Version, sizeof(UART_Version));
+#endif
+
+    // Not implementing authentic device checks
+
+    memset(&gEeprom, 0, sizeof(gEeprom));
+    memset(gDTMF_String, '-', sizeof(gDTMF_String));
+    gDTMF_String[14] = 0;
+
+    BK4819_Init();
+    BOARD_ADC_GetBatteryInfo(&gBatteryCurrentVoltage, &gBatteryCurrent);
+    BOARD_EEPROM_Init();
+    BOARD_EEPROM_LoadCalibration();
+
+    RADIO_ConfigureChannel(0, 2);
+    RADIO_ConfigureChannel(1, 2);
+    RADIO_SelectVfos();
+    RADIO_SetupRegisters(true);
+
+    for (i = 0; i < 4; i++)
+    {
+        BOARD_ADC_GetBatteryInfo(&gBatteryVoltages[i], &gBatteryCurrent);
+    }
+
+    BATTERY_GetReadings(false);
+    if (!gChargingWithTypeC && !gBatteryDisplayLevel)
+    {
+        FUNCTION_Select(FUNCTION_POWER_SAVE);
+        // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
+        GPIO_ResetBacklight();
+        gReducedService = true;
+    }
+    else
+    {
+        BOOT_Mode_t BootMode;
+        uint8_t Channel;
+
+        UI_DisplayWelcome();
+        BACKLIGHT_TurnOn();
+        SYSTEM_DelayMs(1000);
+        //         gMenuListCount = 49;
+        // #if defined(ENABLE_ALARM)
+        //         gMenuListCount++;
+        // #endif
+        // #if defined(ENABLE_NOAA)
+        //         gMenuListCount++;
+        // #endif
+        gMenuListCount = MENU_ABOUT + 1;
+
+        BootMode = BOOT_GetMode();
+        if (gEeprom.POWER_ON_PASSWORD < 1000000)
+        {
+            bIsInLockScreen = true;
+            UI_DisplayLock();
+            bIsInLockScreen = false;
+        }
+
+        BOOT_ProcessMode(BootMode);
+
+        // GPIO_ClearBit(&GPIOA->DATA, GPIOA_PIN_VOICE_0);
+        GPIO_ResetOutputPin(GPIO_PIN_VOICE_0);
+        gUpdateStatus = true;
+        AUDIO_SetVoiceID(0, VOICE_ID_WELCOME);
+        Channel = gEeprom.ScreenChannel[gEeprom.TX_VFO];
+        if (IS_MR_CHANNEL(Channel))
+        {
+            AUDIO_SetVoiceID(1, VOICE_ID_CHANNEL_MODE);
+            AUDIO_SetDigitVoice(2, Channel + 1);
+        }
+        else if (IS_FREQ_CHANNEL(Channel))
+        {
+            AUDIO_SetVoiceID(1, VOICE_ID_FREQUENCY_MODE);
+        }
+        AUDIO_PlaySingleVoice(0);
+#if defined(ENABLE_NOAA)
+        RADIO_ConfigureNOAA();
+#endif
+    }
+
     while (1)
     {
-        
+        APP_Update();
+        if (gNextTimeslice)
+        {
+            APP_TimeSlice10ms();
+            gNextTimeslice = false;
+        }
+        if (gNextTimeslice500ms)
+        {
+            APP_TimeSlice500ms();
+            gNextTimeslice500ms = false;
+        }
     }
 }
-
-/**
- * @brief  System Clock Configuration
- * @param  None
- * @retval None
- */
-static void APP_SystemClockConfig(void)
-{
-    /* Enable HSI */
-    LL_RCC_HSI_Enable();
-    LL_RCC_HSI_SetCalibFreq(LL_RCC_HSICALIBRATION_24MHz);
-    while (LL_RCC_HSI_IsReady() != 1)
-    {
-    }
-
-    /* Set AHB prescaler */
-    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-
-    /* Configure HSISYS as system clock source */
-    LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSISYS);
-    while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSISYS)
-    {
-    }
-
-    LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
-
-    /* Set APB1 prescaler*/
-    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
-    // LL_Init1msTick(24000000);
-
-    /* Update system clock global variable SystemCoreClock (can also be updated by calling SystemCoreClockUpdate function) */
-    LL_SetSystemCoreClock(24000000);
-}
-  

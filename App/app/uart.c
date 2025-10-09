@@ -1,20 +1,5 @@
-/**
-# Copyright (c) 2025 muzkr
-#
-#   https://github.com/muzkr
-#
-# Licensed under the MIT License (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at the root of this repository.
-#
-#     Unless required by applicable law or agreed to in writing, software
-#     distributed under the License is distributed on an "AS IS" BASIS,
-#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#     See the License for the specific language governing permissions and
-#     limitations under the License.
-#
-*/
-/* Copyright 2023 Dual Tachyon
+/* Copyright 2025 muzkr https://github.com/muzkr
+ * Copyright 2023 Dual Tachyon
  * https://github.com/DualTachyon
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,40 +16,30 @@
  */
 
 #include <string.h>
-
 #if !defined(ENABLE_OVERLAY)
-// #include "ARMCM0.h"
+#include "driver/device.h"
 #endif
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "app/uart.h"
 #include "board.h"
-#include "py32f0xx_ll_dma.h"
 #include "driver/aes.h"
 #include "driver/bk4819.h"
 #include "driver/crc.h"
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
-#include "driver/backlight.h"
+#include "driver/board.h"
 #include "functions.h"
 #include "misc.h"
 #include "settings.h"
-
 #if defined(ENABLE_OVERLAY)
 #include "sram-overlay.h"
 #endif
-
 #include "version.h"
 
-#define _DMA_CHANNEL LL_DMA_CHANNEL_2
-
 #define DMA_INDEX(x, y) (((x) + (y)) % sizeof(UART_DMA_Buffer))
-
-#define _OPEN_ACCESS 1
 
 typedef struct
 {
@@ -193,7 +168,7 @@ static union
 } UART_Command;
 
 static uint32_t Timestamp;
-static uint16_t gUART_ReadIndex;
+static uint16_t gUART_WriteIndex;
 static bool bIsEncrypted = true;
 
 static void SendReply(void *pReply, uint16_t Size)
@@ -238,29 +213,23 @@ static void SendVersion(void)
     Reply.Header.ID = 0x0515;
     Reply.Header.Size = sizeof(Reply.Data);
     strcpy(Reply.Data.Version, Version);
-
-#if _OPEN_ACCESS
-    Reply.Data.bHasCustomAesKey = false;
-    Reply.Data.bIsInLockScreen = bIsInLockScreen;
-    memset(Reply.Data.Challenge, 0, 16);
-#else
     Reply.Data.bHasCustomAesKey = bHasCustomAesKey;
     Reply.Data.bIsInLockScreen = bIsInLockScreen;
     Reply.Data.Challenge[0] = gChallenge[0];
     Reply.Data.Challenge[1] = gChallenge[1];
     Reply.Data.Challenge[2] = gChallenge[2];
     Reply.Data.Challenge[3] = gChallenge[3];
-#endif
 
     SendReply(&Reply, sizeof(Reply));
 }
 
-static bool
-#if _OPEN_ACCESS
-    __attribute__((unused))
-#endif
-    IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint32_t *pResponse)
+static bool IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint32_t *pResponse)
 {
+    if (!AES_IsSupported())
+    {
+        return false;
+    }
+
     uint8_t i;
     uint32_t IV[4];
 
@@ -288,7 +257,8 @@ static void CMD_0514(const uint8_t *pBuffer)
 #if defined(ENABLE_FMRADIO)
     gFmRadioCountdown = 4;
 #endif
-    BACKLIGHT_TurnOff_force();
+    // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
+    GPIO_ResetBacklight();
     SendVersion();
 }
 
@@ -312,12 +282,10 @@ static void CMD_051B(const uint8_t *pBuffer)
     Reply.Data.Offset = pCmd->Offset;
     Reply.Data.Size = pCmd->Size;
 
-#if !_OPEN_ACCESS
     if (bHasCustomAesKey)
     {
         bLocked = gIsLocked;
     }
-#endif
 
     if (!bLocked)
     {
@@ -332,7 +300,7 @@ static void CMD_051D(const uint8_t *pBuffer)
     const CMD_051D_t *pCmd = (const CMD_051D_t *)pBuffer;
     REPLY_051D_t Reply;
     bool bReloadEeprom;
-    bool bIsLocked = false;
+    bool bIsLocked;
 
     if (pCmd->Timestamp != Timestamp)
     {
@@ -348,13 +316,11 @@ static void CMD_051D(const uint8_t *pBuffer)
     Reply.Header.Size = sizeof(Reply.Data);
     Reply.Data.Offset = pCmd->Offset;
 
-#if !_OPEN_ACCESS
     bIsLocked = bHasCustomAesKey;
     if (bHasCustomAesKey)
     {
         bIsLocked = gIsLocked;
     }
-#endif
 
     if (!bIsLocked)
     {
@@ -364,7 +330,6 @@ static void CMD_051D(const uint8_t *pBuffer)
         {
             uint16_t Offset = pCmd->Offset + (i * 8U);
 
-            // Write AES key
             if (Offset >= 0x0F30 && Offset < 0x0F40)
             {
                 if (!gIsLocked)
@@ -414,17 +379,15 @@ static void CMD_0529(void)
 
 static void CMD_052D(const uint8_t *pBuffer)
 {
+    const CMD_052D_t *pCmd = (const CMD_052D_t *)pBuffer;
     REPLY_052D_t Reply;
-    bool bIsLocked = false;
+    bool bIsLocked;
 
 #if defined(ENABLE_FMRADIO)
     gFmRadioCountdown = 4;
 #endif
     Reply.Header.ID = 0x052E;
     Reply.Header.Size = sizeof(Reply.Data);
-
-#if !_OPEN_ACCESS
-    const CMD_052D_t *pCmd = (const CMD_052D_t *)pBuffer;
 
     bIsLocked = bHasCustomAesKey;
 
@@ -452,10 +415,7 @@ static void CMD_052D(const uint8_t *pBuffer)
         gTryCount = 3;
         bIsLocked = true;
     }
-#endif
-
     gIsLocked = bIsLocked;
-
     Reply.Data.bIsLocked = bIsLocked;
     SendReply(&Reply, sizeof(Reply));
 }
@@ -482,7 +442,8 @@ static void CMD_052F(const uint8_t *pBuffer)
         FUNCTION_Select(FUNCTION_FOREGROUND);
     }
     Timestamp = pCmd->Timestamp;
-    BACKLIGHT_TurnOff_force();
+    // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
+    GPIO_ResetBacklight();
 
     SendVersion();
 }
@@ -497,48 +458,49 @@ bool UART_IsCommandAvailable(void)
     uint16_t Crc;
     uint16_t i;
 
-    DmaLength = sizeof(UART_DMA_Buffer) - LL_DMA_GetDataLength(DMA1, _DMA_CHANNEL);
+    // DmaLength = DMA_CH0->ST & 0xFFFU;
+    DmaLength = UART_GetDmaLength();
     while (1)
     {
-        if (gUART_ReadIndex == DmaLength)
+        if (gUART_WriteIndex == DmaLength)
         {
             return false;
         }
 
-        while (gUART_ReadIndex != DmaLength && UART_DMA_Buffer[gUART_ReadIndex] != 0xABU)
+        while (gUART_WriteIndex != DmaLength && UART_DMA_Buffer[gUART_WriteIndex] != 0xABU)
         {
-            gUART_ReadIndex = DMA_INDEX(gUART_ReadIndex, 1);
+            gUART_WriteIndex = DMA_INDEX(gUART_WriteIndex, 1);
         }
 
-        if (gUART_ReadIndex == DmaLength)
+        if (gUART_WriteIndex == DmaLength)
         {
             return false;
         }
 
-        if (gUART_ReadIndex < DmaLength)
+        if (gUART_WriteIndex < DmaLength)
         {
-            CommandLength = DmaLength - gUART_ReadIndex;
+            CommandLength = DmaLength - gUART_WriteIndex;
         }
         else
         {
-            CommandLength = (DmaLength + sizeof(UART_DMA_Buffer)) - gUART_ReadIndex;
+            CommandLength = (DmaLength + sizeof(UART_DMA_Buffer)) - gUART_WriteIndex;
         }
         if (CommandLength < 8)
         {
             return 0;
         }
-        if (UART_DMA_Buffer[DMA_INDEX(gUART_ReadIndex, 1)] == 0xCD)
+        if (UART_DMA_Buffer[DMA_INDEX(gUART_WriteIndex, 1)] == 0xCD)
         {
             break;
         }
-        gUART_ReadIndex = DMA_INDEX(gUART_ReadIndex, 1);
+        gUART_WriteIndex = DMA_INDEX(gUART_WriteIndex, 1);
     }
 
-    Index = DMA_INDEX(gUART_ReadIndex, 2);
+    Index = DMA_INDEX(gUART_WriteIndex, 2);
     Size = (UART_DMA_Buffer[DMA_INDEX(Index, 1)] << 8) | UART_DMA_Buffer[Index];
     if (Size + 8 > sizeof(UART_DMA_Buffer))
     {
-        gUART_ReadIndex = DmaLength;
+        gUART_WriteIndex = DmaLength;
         return false;
     }
     if (CommandLength < Size + 8)
@@ -549,7 +511,7 @@ bool UART_IsCommandAvailable(void)
     TailIndex = DMA_INDEX(Index, Size + 2);
     if (UART_DMA_Buffer[TailIndex] != 0xDC || UART_DMA_Buffer[DMA_INDEX(TailIndex, 1)] != 0xBA)
     {
-        gUART_ReadIndex = DmaLength;
+        gUART_WriteIndex = DmaLength;
         return false;
     }
     if (TailIndex < Index)
@@ -565,17 +527,17 @@ bool UART_IsCommandAvailable(void)
     }
 
     TailIndex = DMA_INDEX(TailIndex, 2);
-    if (TailIndex < gUART_ReadIndex)
+    if (TailIndex < gUART_WriteIndex)
     {
-        memset(UART_DMA_Buffer + gUART_ReadIndex, 0, sizeof(UART_DMA_Buffer) - gUART_ReadIndex);
+        memset(UART_DMA_Buffer + gUART_WriteIndex, 0, sizeof(UART_DMA_Buffer) - gUART_WriteIndex);
         memset(UART_DMA_Buffer, 0, TailIndex);
     }
     else
     {
-        memset(UART_DMA_Buffer + gUART_ReadIndex, 0, TailIndex - gUART_ReadIndex);
+        memset(UART_DMA_Buffer + gUART_WriteIndex, 0, TailIndex - gUART_WriteIndex);
     }
 
-    gUART_ReadIndex = TailIndex;
+    gUART_WriteIndex = TailIndex;
 
     if (UART_Command.Header.ID == 0x0514)
     {

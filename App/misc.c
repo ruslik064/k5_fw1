@@ -39,7 +39,6 @@ uint32_t gCustomAesKey[4];
 bool bHasCustomAesKey;
 uint32_t gChallenge[4];
 uint8_t gTryCount;
-uint8_t gIsLocked = 0xFF;
 
 uint16_t gEEPROM_RSSI_CALIB[7][4];
 
@@ -159,6 +158,8 @@ volatile bool gScheduleFM;
 #endif
 
 uint16_t gCurrentRSSI;
+
+uint8_t gIsLocked = 0xFF;
 
 // --------
 

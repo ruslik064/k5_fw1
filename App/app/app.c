@@ -16,42 +16,34 @@
 
 #include <string.h>
 #include "app/action.h"
-
 #if defined(ENABLE_AIRCOPY)
 #include "app/aircopy.h"
 #endif
-
 #include "app/app.h"
 #include "app/dtmf.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "app/generic.h"
 #include "app/main.h"
 #include "app/menu.h"
 #include "app/scanner.h"
-
 #if defined(ENABLE_UART)
 #include "app/uart.h"
 #endif
-
-// #include "ARMCM0.h"
+#include "driver/device.h"
 #include "audio.h"
 #include "board.h"
-#include "py32f0xx_ll_gpio.h"
 #include "driver/backlight.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "driver/bk1080.h"
 #endif
-
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
 #include "driver/keyboard.h"
 #include "driver/st7565.h"
 #include "driver/system.h"
+#include "driver/board.h"
 #include "dtmf.h"
 #include "frequencies.h"
 #include "functions.h"
@@ -59,22 +51,15 @@
 #include "misc.h"
 #include "radio.h"
 #include "settings.h"
-
 #if defined(ENABLE_OVERLAY)
 #include "sram-overlay.h"
 #endif
-
 #include "ui/battery.h"
 #include "ui/inputbox.h"
 #include "ui/menu.h"
 #include "ui/rssi.h"
 #include "ui/status.h"
 #include "ui/ui.h"
-
-#include <stdio.h>
-
-#define _MENU_COUNTDOWN 12     // in sec
-#define _KEY_LOCK_COUNTDOWN 15 // in sec
 
 static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld);
 
@@ -333,7 +318,8 @@ Skip:
     case END_OF_RX_MODE_TTE:
         if (gEeprom.TAIL_NOTE_ELIMINATION)
         {
-            LL_GPIO_ResetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH);
+            // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_ResetAudioPath();
             gTailNoteEliminationCountdown = 20;
             gFlagTteComplete = false;
             gEnableSpeaker = false;
@@ -378,7 +364,8 @@ void APP_StartListening(FUNCTION_Type_t Function)
         }
 #endif
         gVFO_RSSI_Level[!gEeprom.RX_VFO] = 0;
-        LL_GPIO_SetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH);
+        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_SetAudioPath();
         gEnableSpeaker = true;
         BACKLIGHT_TurnOn();
         if (gScanState != SCAN_OFF)
@@ -1008,10 +995,12 @@ void APP_CheckKeys(void)
 
     if (gPttIsPressed)
     {
-        if (LL_GPIO_IsInputPinSet(GPIO_PORT_PTT, GPIO_PIN_PTT))
+        // if (GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
+        if (GPIO_GetInputPin(GPIO_PIN_PTT))
         {
             SYSTEM_DelayMs(20);
-            if (LL_GPIO_IsInputPinSet(GPIO_PORT_PTT, GPIO_PIN_PTT))
+            // if (GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
+            if (GPIO_GetInputPin(GPIO_PIN_PTT))
             {
                 APP_ProcessKey(KEY_PTT, false, false);
                 gPttIsPressed = false;
@@ -1024,7 +1013,8 @@ void APP_CheckKeys(void)
     }
     else
     {
-        if (!LL_GPIO_IsInputPinSet(GPIO_PORT_PTT, GPIO_PIN_PTT))
+        // if (!GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT))
+        if (!GPIO_GetInputPin(GPIO_PIN_PTT))
         {
             gPttDebounceCounter = gPttDebounceCounter + 1;
             if (gPttDebounceCounter > 4)
@@ -1038,7 +1028,6 @@ void APP_CheckKeys(void)
             gPttDebounceCounter = 0;
         }
     }
-
     Key = KEYBOARD_Poll();
     if (gKeyReading0 != Key)
     {
@@ -1050,7 +1039,6 @@ void APP_CheckKeys(void)
         gDebounceCounter = 0;
         return;
     }
-
     gDebounceCounter++;
     if (gDebounceCounter == 2)
     {
@@ -1143,7 +1131,8 @@ void APP_TimeSlice10ms(void)
 
     if (gFlashLightState == FLASHLIGHT_BLINK && (gFlashLightBlinkCounter & 15U) == 0)
     {
-        LL_GPIO_TogglePin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
+        // GPIO_FlipBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
+        GPIO_ToggleOutputPin(GPIO_PIN_FLASHLIGHT);
     }
     if (gVoxResumeCountdown)
     {
@@ -1191,7 +1180,8 @@ void APP_TimeSlice10ms(void)
                     RADIO_SetTxParameters();
                     BK4819_TransmitTone(true, 500);
                     SYSTEM_DelayMs(2);
-                    GPIO_SET_AUDIO_PATH();
+                    // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+                    GPIO_SetAudioPath();
                     gEnableSpeaker = true;
                     gAlarmToneCounter = 0;
                 }
@@ -1423,7 +1413,7 @@ void APP_TimeSlice500ms(void)
                 if (gBacklightCountdown == 0)
                 {
                     // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
-                    BACKLIGHT_TurnOff_force();
+                    GPIO_ResetBacklight();
                 }
             }
             if (gScanState == SCAN_OFF
@@ -1525,7 +1515,7 @@ void APP_TimeSlice500ms(void)
                         FUNCTION_Select(FUNCTION_POWER_SAVE);
                         ST7565_HardwareReset();
                         // GPIO_ClearBit(&GPIOB->DATA, GPIOB_PIN_BACKLIGHT);
-                        BACKLIGHT_TurnOff_force();
+                        GPIO_ResetBacklight();
                     }
                     else
                     {
@@ -1603,7 +1593,8 @@ void APP_TimeSlice500ms(void)
 static void ALARM_Off(void)
 {
     gAlarmState = ALARM_STATE_OFF;
-    GPIO_RESET_AUDIO_PATH();
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
     gEnableSpeaker = false;
     if (gEeprom.ALARM_MODE == ALARM_MODE_TONE)
     {
@@ -1657,9 +1648,8 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     gBatterySaveCountdown = 1000;
     if (gEeprom.AUTO_KEYPAD_LOCK)
     {
-        gKeyLockCountdown = _KEY_LOCK_COUNTDOWN * 2;
+        gKeyLockCountdown = 30;
     }
-
     if (!bKeyPressed)
     {
         if (gFlagSaveVfo)
@@ -1696,7 +1686,7 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     {
         if (Key != KEY_PTT)
         {
-            gMenuCountdown = _MENU_COUNTDOWN * 2;
+            gMenuCountdown = MAX_MENU_COUNTDOWN;
         }
         BACKLIGHT_TurnOn();
         if (gDTMF_DecodeRing)
@@ -1814,14 +1804,13 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
     {
         if (gCurrentFunction == FUNCTION_TRANSMIT)
         {
-            if (
 #if defined(ENABLE_ALARM) || defined(ENABLE_TX1750)
-                gAlarmState == ALARM_STATE_OFF
-#else
-                1
-#endif
-            )
+            if (gAlarmState == ALARM_STATE_OFF)
             {
+#else
+            if (1)
+            {
+#endif
                 if (Key == KEY_PTT)
                 {
                     GENERIC_Key_PTT(bKeyPressed);
@@ -1847,7 +1836,8 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                     {
                         if (!bKeyPressed)
                         {
-                            LL_GPIO_ResetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH);
+                            // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+                            GPIO_ResetAudioPath();
                             gEnableSpeaker = false;
                             BK4819_ExitDTMF_TX(false);
                             if (gCurrentVfo->SCRAMBLING_TYPE == 0 || !gSetting_ScrambleEnable)
@@ -1864,7 +1854,8 @@ static void APP_ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
                     {
                         if (gEeprom.DTMF_SIDE_TONE)
                         {
-                            LL_GPIO_SetOutputPin(GPIO_PORT_AUDIO_PATH, GPIO_PIN_AUDIO_PATH);
+                            // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+                            GPIO_SetAudioPath();
                             gEnableSpeaker = true;
                         }
                         BK4819_DisableScramble();

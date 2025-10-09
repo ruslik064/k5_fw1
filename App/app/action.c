@@ -17,15 +17,12 @@
 #include "app/action.h"
 #include "app/app.h"
 #include "app/dtmf.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
-#include "driver/bk1080.h"
 #endif
-
 #include "app/scanner.h"
 #include "audio.h"
-#include "py32f0xx_ll_gpio.h"
+#include "driver/bk1080.h"
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
 #include "functions.h"
@@ -40,14 +37,16 @@ static void ACTION_FlashLight(void)
     {
     case 0:
         gFlashLightState++;
-        LL_GPIO_SetOutputPin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
+        // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
+        GPIO_SetOutputPin(GPIO_PIN_FLASHLIGHT);
         break;
     case 1:
         gFlashLightState++;
         break;
     default:
         gFlashLightState = 0;
-        LL_GPIO_ResetOutputPin(GPIO_PORT_FLASHLIGHT, GPIO_PIN_FLASHLIGHT);
+        // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_FLASHLIGHT);
+        GPIO_ResetOutputPin(GPIO_PIN_FLASHLIGHT);
     }
 }
 

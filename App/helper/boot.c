@@ -15,7 +15,6 @@
  */
 
 #include "app/aircopy.h"
-#include "py32f0xx_ll_gpio.h"
 #include "driver/bk4819.h"
 #include "driver/keyboard.h"
 #include "driver/gpio.h"
@@ -34,8 +33,8 @@ BOOT_Mode_t BOOT_GetMode(void)
 
     for (i = 0; i < 2; i++)
     {
-        // PTT: PA3
-        if (LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_3))
+        // if (GPIO_CheckBit(&GPIOC->DATA, GPIOC_PIN_PTT)) {
+        if (GPIO_GetInputPin(GPIO_PIN_PTT))
         {
             return BOOT_MODE_NORMAL;
         }
@@ -68,16 +67,14 @@ void BOOT_ProcessMode(BOOT_Mode_t Mode)
     {
         gMenuCursor = MENU_350TX;
         gSubMenuSelection = gSetting_350TX;
-        // gMenuCursor = MENU_F_LOCK;
-        // gSubMenuSelection = gSetting_F_LOCK;
         GUI_SelectNextDisplay(DISPLAY_MENU);
-        //         gMenuListCount = 55;
-        // #if defined(ENABLE_ALARM)
-        //         gMenuListCount++;
-        // #endif
-        // #if defined(ENABLE_NOAA)
-        //         gMenuListCount++;
-        // #endif
+//         gMenuListCount = 55;
+// #if defined(ENABLE_ALARM)
+//         gMenuListCount++;
+// #endif
+// #if defined(ENABLE_NOAA)
+//         gMenuListCount++;
+// #endif
         gMenuListCount = _MENU_END;
 
         gF_LOCK = true;

@@ -16,13 +16,10 @@
 
 #include <string.h>
 #include "app/dtmf.h"
-
 #if defined(ENABLE_FMRADIO)
 #include "app/fm.h"
 #endif
-
 #include "audio.h"
-#include "py32f0xx_ll_gpio.h"
 #include "dcs.h"
 #include "driver/bk4819.h"
 #include "driver/eeprom.h"
@@ -34,9 +31,6 @@
 #include "misc.h"
 #include "radio.h"
 #include "settings.h"
-
-#define _AMP_PORT GPIOB
-#define _AMP_PIN LL_GPIO_PIN_7
 
 VFO_Info_t *gTxVfo;
 VFO_Info_t *gRxVfo;
@@ -591,7 +585,8 @@ void RADIO_SetupRegisters(bool bSwitchToFunction0)
     uint16_t InterruptMask;
     uint32_t Frequency;
 
-    LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
     gEnableSpeaker = false;
     BK4819_ToggleGpioOut(BK4819_GPIO6_PIN2_GREEN, false);
 
@@ -777,7 +772,8 @@ void RADIO_SetTxParameters(void)
 {
     BK4819_FilterBandwidth_t Bandwidth;
 
-    LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+    // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+    GPIO_ResetAudioPath();
 
     gEnableSpeaker = false;
 
@@ -991,7 +987,8 @@ void RADIO_SendEndOfTransmission(void)
     {
         if (gEeprom.DTMF_SIDE_TONE)
         {
-            LL_GPIO_SetOutputPin(_AMP_PORT, _AMP_PIN);
+            // GPIO_SetBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+            GPIO_SetAudioPath();
             gEnableSpeaker = true;
             SYSTEM_DelayMs(60);
         }
@@ -1003,7 +1000,8 @@ void RADIO_SendEndOfTransmission(void)
             gEeprom.DTMF_HASH_CODE_PERSIST_TIME,
             gEeprom.DTMF_CODE_PERSIST_TIME,
             gEeprom.DTMF_CODE_INTERVAL_TIME);
-        LL_GPIO_ResetOutputPin(_AMP_PORT, _AMP_PIN);
+        // GPIO_ClearBit(&GPIOC->DATA, GPIOC_PIN_AUDIO_PATH);
+        GPIO_ResetAudioPath();
         gEnableSpeaker = false;
     }
     BK4819_ExitDTMF_TX(true);
