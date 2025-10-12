@@ -2,7 +2,16 @@
 # k5_fw1: One Firmware for Both V1 & V2 Hardware Versions of Quansheng UV-K5/K6 Radios!
 
 The firmware in this repository is a port of [DualTachyon's code](https://github.com/DualTachyon/uv-k5-firmware) 
-for both V1 & V2 hardwares. But it won't stop there. Let's see what happens next.
+for both V1 & V2 hardwares. 
+
+To date, most of the work has focused on compatibility with the V2 hardware, which is now largely complete. 
+Regarding application features, I'm taking a conservative approach for now. 
+The current plan is to keep things as bare-bones as possible, staying close to the original functionality and design of the Quansheng firmware. There won't be any fancy new features, such as backlight brightness adjustment.
+
+I privately ported the egzumer firmware to the hardware driver layer of this repo. 
+It runs well, although I'm having trouble reducing the firmware size to fit in the 60 KB flash while retaining common functionalities. 
+If you have some crazy ideas want to realise on V2 hardware, don't wait for me—just get started yourself. 
+On that I hope this repo will be helpful. 
 
 
 ## Versioning
