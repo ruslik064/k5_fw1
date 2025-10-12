@@ -51,6 +51,12 @@ python serialtool/cli.py -h
 
 Requires CMake, Ninja or make, along with GCC for building.
 
+You can build the project with
+```
+cmake -B build/ --preset Release && \
+cmake --build build/
+```
+
 
 ## Discussions
 
