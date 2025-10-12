@@ -57,6 +57,12 @@ cmake -B build/ --preset Release && \
 cmake --build build/
 ```
 
+Or with docker:
+```
+docker build -t k5_fw1 .
+docker run --rm -it -v "$(pwd):/repo" k5_fw1
+```
+
 
 ## Discussions
 
