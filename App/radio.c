@@ -973,6 +973,22 @@ void RADIO_PrepareCssTX(void)
     RADIO_SetupRegisters(true);
 }
 
+static void _SendCssTail(void)
+{
+    switch (gCurrentVfo->pTX->CodeType)
+    {
+    case CODE_TYPE_DIGITAL:
+    case CODE_TYPE_REVERSE_DIGITAL:
+        BK4819_EnableCDCSS();
+        break;
+    default:
+        BK4819_EnableCTCSS();
+        break;
+    }
+
+    SYSTEM_DelayMs(200);
+}
+
 void RADIO_SendEndOfTransmission(void)
 {
     if (gEeprom.ROGER == ROGER_MODE_ROGER)
@@ -1005,4 +1021,8 @@ void RADIO_SendEndOfTransmission(void)
         gEnableSpeaker = false;
     }
     BK4819_ExitDTMF_TX(true);
+
+    // send the CTCSS/DCS tail tone - allows the receivers to mute the usual FM squelch tail/crash
+    if (gEeprom.TAIL_NOTE_ELIMINATION)
+        _SendCssTail();
 }
