@@ -1,6 +1,9 @@
 
 # k5_fw1: One Firmware for Both V1 & V2 Hardware Versions of Quansheng UV-K5/K6 Radios!
 
+> [!NOTE] 
+> Since Quansheng radios are fast-moving targets, I will redirect my efforts to @armel's [F4HWN](https://github.com/armel/uv-k5-firmware-custom) firmware, contributing my small part to the long-running, actively maintained project, rather than continue working on this project. Therefore it will not be updated for the foreseeable future, though the repository will remain (and may be archived soon). Thanks for the attention! Have fun!
+
 The firmware in this repository is a port of [DualTachyon's code](https://github.com/DualTachyon/uv-k5-firmware) 
 for both V1 & V2 hardwares. 
 
